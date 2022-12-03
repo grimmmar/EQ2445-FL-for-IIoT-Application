@@ -7,13 +7,13 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import torch
-import pandas as pd
 from torch.utils.data import DataLoader
+import pandas as pd
 
 from utils import get_dataset
 from options import args_parser
 from update import test_inference
-from models import MLP, CNNMnist, CNNFashion_Mnist, CNNCifar, VGGnet
+from models import MLP, CNNMnist, CNNFashion_Mnist, CNNCifar, CNNLego, VGG16, VGG19
 
 
 if __name__ == '__main__':
@@ -36,8 +36,12 @@ if __name__ == '__main__':
             global_model = CNNFashion_Mnist(args=args)
         elif args.dataset == 'cifar':
             global_model = CNNCifar(args=args)
-    elif args.model == 'vgg':
-        global_model = VGGnet(args=args)
+        elif args.dataset == 'LEGO':
+            global_model = CNNLego(args=args)
+    elif args.model == 'vgg16':
+        global_model = VGG16(args=args)
+    elif args.model == 'vgg19':
+        global_model = VGG19(args=args)
     elif args.model == 'mlp':
         # Multi-layer preceptron
         img_size = train_dataset[0][0].shape
@@ -87,19 +91,17 @@ if __name__ == '__main__':
             acc = correct/total
             batch_acc.append(acc)
 
-            if batch_idx % 50 == 0:
-                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tAccuracy: {:.2f}'.format(
                     epoch+1, batch_idx * len(images), len(trainloader.dataset),
-                    100. * batch_idx / len(trainloader), loss.item()))
+                    100. * batch_idx / len(trainloader), loss.item(), acc))
             batch_loss.append(loss.item())
-        
+
         loss_avg = sum(batch_loss)/len(batch_loss)
         print('\nTrain loss:', loss_avg)
         epoch_loss.append(loss_avg)
         acc_avg = sum(batch_acc)/len(batch_acc)
         epoch_accuracy.append(acc_avg)
 
-  
     # Plot loss
     plt.figure()
     plt.plot(range(len(epoch_loss)), epoch_loss)
@@ -113,7 +115,7 @@ if __name__ == '__main__':
     plt.ylabel('Train accuracy')
     plt.savefig('./save/nn_{}_{}_{}_acc.png'.format(args.dataset, args.model, args.epochs))
 
-    # save csv 
+    # save csv
     save = pd.DataFrame({'loss': epoch_loss, 'accuracy': epoch_accuracy})
     save.to_csv('./save/nn_{}_{}_{}.csv'.format(args.dataset, args.model, args.epochs))
 

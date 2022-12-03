@@ -73,18 +73,20 @@ class CNNCifar(nn.Module):
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.conv3 = nn.Conv2d(16, 16, 5)
+        self.fc1 = nn.Linear(16 * 21*21, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, args.num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
+        x = self.pool(F.relu(self.conv3(x)))
+        x = x.view(x.size(0),-1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return F.log_softmax(x, dim=1)
+        out = self.fc3(x)
+        return F.log_softmax(out, dim=1)
 
 
 class modelC(nn.Module):
@@ -207,3 +209,89 @@ class VGGnet(nn.Module):
 #        print(out.shape)
         return out
 
+
+
+class VGG19(nn.Module):
+    def __init__(self,args):
+        super(VGG19, self).__init__()
+        self.block1 = nn.Sequential(
+            nn.Conv2d(in_channels=args.num_channels,out_channels=64,kernel_size=(3,3),stride=(1,1),padding=1),
+            nn.BatchNorm2d(num_features=64),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2,2),stride=(2,2))
+        )
+        self.block2 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        )
+        self.block3 = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=256),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=256),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=256),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=256),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        )
+        self.block4 = nn.Sequential(
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        )
+        self.block5  = nn.Sequential(
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=(3, 3), stride=(1, 1), padding=1),
+            nn.BatchNorm2d(num_features=512),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(512*6*6,4096),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(4096,4096),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(4096,args.num_classes)
+        )
+    def forward(self,x):
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        x = self.block4(x)
+        x = self.block5(x)
+        logits = self.classifier(x.view(-1,512*6*6))
+        probas = F.softmax(logits,dim = 1)
+        return logits

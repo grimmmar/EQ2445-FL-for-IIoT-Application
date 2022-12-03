@@ -8,6 +8,7 @@ import copy
 import time
 import pickle
 import numpy as np
+import sys
 from tqdm import tqdm
 
 import torch
@@ -15,9 +16,8 @@ from tensorboardX import SummaryWriter
 
 from options import args_parser
 from update import LocalUpdate, test_inference
-from models import MLP, CNNMnist, CNNFashion_Mnist, CNNCifar, VGGnet
-from utils import get_dataset, average_weights, exp_details
-
+from models import MLP, CNNMnist, CNNFashion_Mnist, CNNCifar, VGGnet, VGG19
+from utils import *
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     if args.gpu:
         torch.cuda.set_device(int(args.gpu))
     device = 'cuda' if args.gpu else 'cpu'
-    print('using device:',device)
+    print('using device:', device)
 
     # load dataset and user groups
     train_dataset, test_dataset, user_groups = get_dataset(args)
@@ -46,8 +46,12 @@ if __name__ == '__main__':
             global_model = CNNFashion_Mnist(args=args)
         elif args.dataset == 'cifar':
             global_model = CNNCifar(args=args)
+        elif args.dataset == 'LEGO':
+            global_model = CNNCifar(args=args)
     elif args.model == 'vgg':
         global_model = VGGnet(args=args)
+    elif args.model == 'vgg19':
+        global_model = VGG19(args=args)
     elif args.model == 'mlp':
         # Multi-layer preceptron
         img_size = train_dataset[0][0].shape
@@ -73,10 +77,11 @@ if __name__ == '__main__':
     cv_loss, cv_acc = [], []
     print_every = 2
     val_loss_pre, counter = 0, 0
+    amplitude_hk = get_hk(args, 10)
 
     for epoch in tqdm(range(args.epochs)):
         local_weights, local_losses = [], []
-        print(f'\n | Global Training Round : {epoch+1} |\n')
+        print(f'\n | Global Training Round : {epoch + 1} |\n')
 
         global_model.train()
         m = max(int(args.frac * args.num_users), 1)
@@ -90,8 +95,9 @@ if __name__ == '__main__':
             local_weights.append(copy.deepcopy(w))
             local_losses.append(copy.deepcopy(loss))
 
+        snr = 5.0
         # update global weights
-        global_weights = average_weights(local_weights)
+        global_weights = average_weights(local_weights, amplitude_hk[epoch], snr, args)
 
         # update global weights
         global_model.load_state_dict(global_weights)
@@ -108,57 +114,62 @@ if __name__ == '__main__':
             acc, loss = local_model.inference(model=global_model)
             list_acc.append(acc)
             list_loss.append(loss)
-        train_accuracy.append(sum(list_acc)/len(list_acc))
+        train_accuracy.append(sum(list_acc) / len(list_acc))
 
         # print global training loss after every 'i' rounds
-        if (epoch+1) % print_every == 0:
-            print(f' \nAvg Training Stats after {epoch+1} global rounds:')
+        if (epoch + 1) % print_every == 0:
+            print(f' \nAvg Training Stats after {epoch + 1} global rounds:')
             print(f'Training Loss : {np.mean(np.array(train_loss))}')
-            print('Train Accuracy: {:.2f}% \n'.format(100*train_accuracy[-1]))
+            print('Train Accuracy: {:.2f}% \n'.format(100 * train_accuracy[-1]))
 
     # Test inference after completion of training
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
 
     print(f' \n Results after {args.epochs} global rounds of training:')
-    print("|---- Avg Train Accuracy: {:.2f}%".format(100*train_accuracy[-1]))
-    print("|---- Test Accuracy: {:.2f}%".format(100*test_acc))
+    print("|---- Avg Train Accuracy: {:.2f}%".format(100 * train_accuracy[-1]))
+    print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
 
     # Saving the objects train_loss and train_accuracy:
-    sub_file_name = 'save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}].pkl'.\
+    sub_file_name = 'save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}].pkl'. \
         format(args.dataset, args.model, args.epochs, args.frac, args.iid,
                args.local_ep, args.local_bs)
     file_name = os.path.join(os.getcwd(), sub_file_name)
-    #print(file_name, type(file_name))
+    # print(file_name, type(file_name))
 
     with open(file_name, 'wb') as f:
         pickle.dump([train_loss, train_accuracy], f)
 
-    print('\n Total Run Time: {0:0.4f}'.format(time.time()-start_time))
+    print('\n Total Run Time: {0:0.4f}'.format(time.time() - start_time))
 
-    # # PLOTTING(optional)
-    # import matplotlib
-    # import matplotlib.pyplot as plt
-    # matplotlib.use('Agg')
+    # PLOTTING(optional)
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import pandas as pd
 
-    # # Plot Loss curve
-    # plt.figure()
-    # plt.title('Training Loss vs Communication rounds')
-    # plt.plot(range(len(train_loss)), train_loss, color='r')
-    # plt.ylabel('Training loss')
-    # plt.xlabel('Communication Rounds')
-    # sub_fig_name = "./save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_loss.png".\
-    #     format(args.dataset, args.model, args.epochs, args.frac,
-    #                args.iid, args.local_ep, args.local_bs)
-    # fig_name = os.path.join(os.getcwd(), sub_fig_name)
-    # plt.savefig(fig_name)
+    matplotlib.use('Agg')
 
-    # # Plot Average Accuracy vs Communication rounds
-    # plt.figure()
-    # plt.title('Average Accuracy vs Communication rounds')
-    # plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
-    # plt.ylabel('Average Accuracy')
-    # plt.xlabel('Communication Rounds')
-    # sub_fig_name = './save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_acc.png'.\
-    #     format(args.dataset, args.model, args.epochs, args.frac,
-    #            args.iid, args.local_ep, args.local_bs)
-    # fig_name = (fig_name)
+    # Plot Loss curve
+    plt.figure()
+    plt.title('Training Loss vs Communication rounds')
+    plt.plot(range(len(train_loss)), train_loss, color='r')
+    plt.ylabel('Training loss')
+    plt.xlabel('Communication Rounds')
+    sub_fig_name = "save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_loss.png". \
+        format(args.dataset, args.model, args.epochs, args.frac,
+               args.iid, args.local_ep, args.local_bs)
+    fig_name = os.path.join(os.getcwd(), sub_fig_name)
+    plt.savefig(fig_name)
+
+    # Plot Average Accuracy vs Communication rounds
+    plt.figure()
+    plt.title('Average Accuracy vs Communication rounds')
+    plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
+    plt.ylabel('Average Accuracy')
+    plt.xlabel('Communication Rounds')
+    sub_fig_name = 'save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_acc.png'. \
+        format(args.dataset, args.model, args.epochs, args.frac,
+               args.iid, args.local_ep, args.local_bs)
+    fig_name = (fig_name)
+
+    save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy})
+    save.to_csv('save/nn_{}_{}_{}.csv'.format(args.dataset, args.model, args.epochs))

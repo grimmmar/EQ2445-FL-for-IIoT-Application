@@ -43,6 +43,7 @@ class LocalUpdate(object):
         idxs_val = idxs[int(0.8*len(idxs)):int(0.9*len(idxs))]
         idxs_test = idxs[int(0.9*len(idxs)):]
 
+
         trainloader = DataLoader(DatasetSplit(dataset, idxs_train),
                                  batch_size=self.args.local_bs, shuffle=True)
         validloader = DataLoader(DatasetSplit(dataset, idxs_val),
@@ -51,23 +52,18 @@ class LocalUpdate(object):
                                 batch_size=int(len(idxs_test)/10), shuffle=False)
         return trainloader, validloader, testloader
 
-    def adjust_learning_rate(self,optimizer, global_round):
-      lr = self.args.lr * (0.1 ** (global_round // 100))
-      for param_group in optimizer.param_groups:
-          param_group['lr'] = lr
-
     def update_weights(self, model, global_round):
         # Set mode to train model
         model.train()
         epoch_loss = []
+
         # Set optimizer for the local updates
         if self.args.optimizer == 'sgd':
             optimizer = torch.optim.SGD(model.parameters(), lr=self.args.lr,
-                                        momentum=0.8)
+                                        momentum=0.5)
         elif self.args.optimizer == 'adam':
             optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr,
                                          weight_decay=1e-4)
-        self.adjust_learning_rate(optimizer,global_round)
 
         for iter in range(self.args.local_ep):
             batch_loss = []
@@ -125,7 +121,7 @@ def test_inference(args, model, test_dataset):
 
     device = 'cuda' if args.gpu else 'cpu'
     criterion = nn.NLLLoss().to(device)
-    testloader = DataLoader(test_dataset, batch_size=args.local_bs,
+    testloader = DataLoader(test_dataset, batch_size=128,
                             shuffle=False)
 
     for batch_idx, (images, labels) in enumerate(testloader):

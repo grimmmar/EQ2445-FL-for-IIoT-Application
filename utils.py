@@ -5,15 +5,15 @@
 import os
 import copy
 import torch
+import numpy as np
+from scipy.stats import rice
 from torchvision import datasets, transforms
 from torchvision.datasets import ImageFolder
+from torch.utils.data.dataloader import DataLoader
 from torch.utils.data import random_split
 from sampling import mnist_iid, mnist_noniid, mnist_noniid_unequal
 from sampling import cifar_iid, cifar_noniid
 from sampling import LEGO_iid
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 def get_dataset(args):
@@ -26,7 +26,6 @@ def get_dataset(args):
         data_dir = '../data/cifar/'
         apply_transform = transforms.Compose(
             [transforms.ToTensor(),
-             #transforms.Resize([224, 224]),
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
         train_dataset = datasets.CIFAR10(data_dir, train=True, download=True,
@@ -47,7 +46,11 @@ def get_dataset(args):
             else:
                 # Chose euqal splits for every user
                 user_groups = cifar_noniid(train_dataset, args.num_users)
-    
+
+        """
+        This part is the LEGO dataset code!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        """
+
     elif args.dataset == 'LEGO':
         data_dir = '../data/LEGO brick images v1/'
         classes = os.listdir(data_dir)
@@ -56,11 +59,12 @@ def get_dataset(args):
         train_transform = transforms.Compose([
             transforms.RandomRotation(10),  # rotate +/- 10 degrees
             transforms.RandomHorizontalFlip(),  # reverse 50% of images
-            transforms.Resize(100),  # resize shortest side to 100 pixels
-            transforms.CenterCrop(100),  # crop longest side to 100 pixels at center
+            # transforms.Resize(100),  # resize shortest side to 100 pixels
+            # transforms.CenterCrop(100),  # crop longest side to 100 pixels at center
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
+            transforms.Normalize([0.485, 0.456, 0.406],
+                                 [0.229, 0.224, 0.225])
+        ])
         dataset = ImageFolder(data_dir, transform=train_transform)
         img, label = dataset[100]
         torch.manual_seed(20)
@@ -76,15 +80,10 @@ def get_dataset(args):
             data_dir = '../data/mnist/'
         else:
             data_dir = '../data/fmnist/'
-        if args.model=='vgg':
-          apply_transform = transforms.Compose([
-              transforms.ToTensor(),
-              transforms.Resize([224, 224]),
-              transforms.Normalize((0.1307,), (0.3081,))])
-        else:
-          apply_transform = transforms.Compose([
-              transforms.ToTensor(),
-              transforms.Normalize((0.1307,), (0.3081,))])
+
+        apply_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))])
 
         train_dataset = datasets.MNIST(data_dir, train=True, download=True,
                                        transform=apply_transform)
@@ -92,7 +91,6 @@ def get_dataset(args):
         test_dataset = datasets.MNIST(data_dir, train=False, download=True,
                                       transform=apply_transform)
 
-        # print(train_dataset[0][0], train_dataset[0][0].shape)
         # sample training data amongst users
         if args.iid:
             # Sample IID user data from Mnist
@@ -101,8 +99,7 @@ def get_dataset(args):
             # Sample Non-IID user data from Mnist
             if args.unequal:
                 # Chose uneuqal splits for every user
-                user_groups = mnist_noniid_unequal(
-                    train_dataset, args.num_users)
+                user_groups = mnist_noniid_unequal(train_dataset, args.num_users)
             else:
                 # Chose euqal splits for every user
                 user_groups = mnist_noniid(train_dataset, args.num_users)
@@ -110,16 +107,92 @@ def get_dataset(args):
     return train_dataset, test_dataset, user_groups
 
 
-def average_weights(w):
+def denormalization(w_avg, stds, means):
+    for idx, key in enumerate(w_avg.keys()):
+        w_avg[key] = w_avg[key] * stds[idx] + means[idx]
+    return w_avg
+
+
+'''
+def average_weights(w, hk, wgn):
     """
     Returns the average of the weights.
     """
+    # w_avg = copy.deepcopy(w[0])
+    # for key in w_avg.keys():
+    #     for i in range(1, len(w)):
+    #         w_avg[key] += w[i][key]
+    #     w_avg[key] = torch.div(w_avg[key], len(w))
+
     w_avg = copy.deepcopy(w[0])
+    stds = []
+    means = []
     for key in w_avg.keys():
+        meanValue = torch.mean(w_avg[key])
+        stdValue = torch.std(w_avg[key], unbiased=False)
+        newW = (w_avg[key] - meanValue) / stdValue
+        w_avg[key] = newW
+        stds.append(stdValue)
+        means.append(meanValue)
+
         for i in range(1, len(w)):
-            w_avg[key] += w[i][key]
+            meanValue = torch.mean(w[i][key])
+            stdValue = torch.std(w[i][key], unbiased=False)
+            newW = (w[i][key] - meanValue) / stdValue
+            w_avg[key] += newW
         w_avg[key] = torch.div(w_avg[key], len(w))
-    return w_avg
+
+    w_avg_de = denormalization(w_avg, stds, means)
+    return w_avg_de
+'''
+
+
+def average_weights(w, hk, snr, args):
+    w_avg = copy.deepcopy(w[0])
+    stds = []
+    means = []
+    for key in w_avg.keys():
+        meanValue = torch.mean(w_avg[key])
+        stdValue = torch.std(w_avg[key], unbiased=False)
+        newW = (w_avg[key] - meanValue) / stdValue
+        w_avg[key] = newW
+        stds.append(stdValue)
+        means.append(meanValue)
+
+        for i in range(1, len(w)):
+            meanValue = torch.mean(w[i][key])
+            stdValue = torch.std(w[i][key], unbiased=False)
+            newW = (w[i][key] - meanValue) / stdValue
+            w_avg[key] += newW
+        w_avg[key] = torch.div(w_avg[key], len(w))
+
+    m = calculate_m(w_avg, hk)
+    w_avg_n = copy.deepcopy(w_avg)
+    for key in w_avg.keys():
+        wgn = np.random.normal(0, 1 / snr, w_avg[key].shape)
+        w_avg_n[key] = w_avg[key] + m * wgn / args.num_users
+
+    w_avg_de = denormalization(w_avg_n, stds, means)
+    return w_avg_de
+
+
+def calculate_m(w, hk):
+    w_squaresum = 0
+    d = 0
+    w_avg = copy.deepcopy(w)
+    for key in w_avg.keys():
+        w_squaresum += torch.sum(torch.pow(w_avg[key], 2))
+        d += torch.numel(w_avg[key])
+    beta = 2 * w_squaresum / d
+    m = beta / hk
+    return m
+
+
+def get_hk(args, alpha):
+    cn = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], args.epochs)
+    hk = np.sqrt(alpha/(alpha+1)) + np.sqrt(1/(alpha+1)) * cn
+    amplitude = [np.sum(hk[i]**2) for i in range(args.epochs)]
+    return amplitude
 
 
 def exp_details(args):
