@@ -23,7 +23,7 @@ def get_dataset(args):
     """
 
     if args.dataset == 'cifar':
-        data_dir = '../data/cifar/'
+        data_dir = './data/cifar/'
         apply_transform = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -52,7 +52,7 @@ def get_dataset(args):
         """
 
     elif args.dataset == 'LEGO':
-        data_dir = '../data/LEGO brick images v1/'
+        data_dir = './data/LEGO brick images v1/'
         classes = os.listdir(data_dir)
         print('The number of classes in the dataset is: ' + str(len(classes)))
 
@@ -77,9 +77,9 @@ def get_dataset(args):
 
     elif args.dataset == 'mnist' or 'fmnist':
         if args.dataset == 'mnist':
-            data_dir = '../data/mnist/'
+            data_dir = './data/mnist/'
         else:
-            data_dir = '../data/fmnist/'
+            data_dir = './data/fmnist/'
 
         apply_transform = transforms.Compose([
             transforms.ToTensor(),
@@ -113,7 +113,7 @@ def denormalization(w_avg, stds, means):
     return w_avg
 
 
-def average_weights(w, hk, args):
+def average_weights(w, hk, args, device):
     w_avg = copy.deepcopy(w[0])
     stds = []
     means = []
@@ -130,7 +130,8 @@ def average_weights(w, hk, args):
             stdValue = torch.std(w[i][key], unbiased=False)
             newW = (w[i][key] - meanValue) / stdValue
             m = calculate_m(newW, hk[i])
-            wgn = np.random.normal(0, 1 / args.snr, newW.shape)
+            wgn = torch.normal(0, 1 / args.snr, newW.shape)
+            wgn = wgn.to(device)
             w_avg[key] += newW + m * wgn / args.num_users
         w_avg[key] = torch.div(w_avg[key], len(w))
 
