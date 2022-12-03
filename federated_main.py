@@ -95,9 +95,9 @@ if __name__ == '__main__':
             local_weights.append(copy.deepcopy(w))
             local_losses.append(copy.deepcopy(loss))
 
-        snr = 5.0
+        snr = 3.0
         # update global weights
-        global_weights = average_weights(local_weights, amplitude_hk[epoch], snr, args)
+        global_weights = average_weights(local_weights, amplitude_hk, snr, args)
 
         # update global weights
         global_model.load_state_dict(global_weights)

@@ -163,35 +163,27 @@ def average_weights(w, hk, snr, args):
             meanValue = torch.mean(w[i][key])
             stdValue = torch.std(w[i][key], unbiased=False)
             newW = (w[i][key] - meanValue) / stdValue
-            w_avg[key] += newW
+            m = calculate_m(newW, hk[i])
+            wgn = np.random.normal(0, 1 / snr, newW.shape)
+            w_avg[key] += newW + m * wgn / args.num_users
         w_avg[key] = torch.div(w_avg[key], len(w))
 
-    m = calculate_m(w_avg, hk)
-    w_avg_n = copy.deepcopy(w_avg)
-    for key in w_avg.keys():
-        wgn = np.random.normal(0, 1 / snr, w_avg[key].shape)
-        w_avg_n[key] = w_avg[key] + m * wgn / args.num_users
-
-    w_avg_de = denormalization(w_avg_n, stds, means)
+    w_avg_de = denormalization(w_avg, stds, means)
     return w_avg_de
 
 
 def calculate_m(w, hk):
-    w_squaresum = 0
-    d = 0
-    w_avg = copy.deepcopy(w)
-    for key in w_avg.keys():
-        w_squaresum += torch.sum(torch.pow(w_avg[key], 2))
-        d += torch.numel(w_avg[key])
+    w_squaresum = torch.sum(torch.pow(w, 2))
+    d = torch.numel(w)
     beta = 2 * w_squaresum / d
     m = beta / hk
     return m
 
 
 def get_hk(args, alpha):
-    cn = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], args.epochs)
+    cn = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], args.num_users)
     hk = np.sqrt(alpha/(alpha+1)) + np.sqrt(1/(alpha+1)) * cn
-    amplitude = [np.sum(hk[i]**2) for i in range(args.epochs)]
+    amplitude = [np.sum(hk[i]**2) for i in range(args.num_users)]
     return amplitude
 
 
