@@ -113,41 +113,7 @@ def denormalization(w_avg, stds, means):
     return w_avg
 
 
-'''
-def average_weights(w, hk, wgn):
-    """
-    Returns the average of the weights.
-    """
-    # w_avg = copy.deepcopy(w[0])
-    # for key in w_avg.keys():
-    #     for i in range(1, len(w)):
-    #         w_avg[key] += w[i][key]
-    #     w_avg[key] = torch.div(w_avg[key], len(w))
-
-    w_avg = copy.deepcopy(w[0])
-    stds = []
-    means = []
-    for key in w_avg.keys():
-        meanValue = torch.mean(w_avg[key])
-        stdValue = torch.std(w_avg[key], unbiased=False)
-        newW = (w_avg[key] - meanValue) / stdValue
-        w_avg[key] = newW
-        stds.append(stdValue)
-        means.append(meanValue)
-
-        for i in range(1, len(w)):
-            meanValue = torch.mean(w[i][key])
-            stdValue = torch.std(w[i][key], unbiased=False)
-            newW = (w[i][key] - meanValue) / stdValue
-            w_avg[key] += newW
-        w_avg[key] = torch.div(w_avg[key], len(w))
-
-    w_avg_de = denormalization(w_avg, stds, means)
-    return w_avg_de
-'''
-
-
-def average_weights(w, hk, snr, args):
+def average_weights(w, hk, args):
     w_avg = copy.deepcopy(w[0])
     stds = []
     means = []
@@ -164,7 +130,7 @@ def average_weights(w, hk, snr, args):
             stdValue = torch.std(w[i][key], unbiased=False)
             newW = (w[i][key] - meanValue) / stdValue
             m = calculate_m(newW, hk[i])
-            wgn = np.random.normal(0, 1 / snr, newW.shape)
+            wgn = np.random.normal(0, 1 / args.snr, newW.shape)
             w_avg[key] += newW + m * wgn / args.num_users
         w_avg[key] = torch.div(w_avg[key], len(w))
 

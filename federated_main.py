@@ -95,9 +95,8 @@ if __name__ == '__main__':
             local_weights.append(copy.deepcopy(w))
             local_losses.append(copy.deepcopy(loss))
 
-        snr = 3.0
         # update global weights
-        global_weights = average_weights(local_weights, amplitude_hk, snr, args)
+        global_weights = average_weights(local_weights, amplitude_hk, args)
 
         # update global weights
         global_model.load_state_dict(global_weights)
@@ -130,9 +129,9 @@ if __name__ == '__main__':
     print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
 
     # Saving the objects train_loss and train_accuracy:
-    sub_file_name = 'save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}].pkl'. \
+    sub_file_name = 'save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}].pkl'. \
         format(args.dataset, args.model, args.epochs, args.frac, args.iid,
-               args.local_ep, args.local_bs)
+               args.local_ep, args.local_bs, args.snr)
     file_name = os.path.join(os.getcwd(), sub_file_name)
     # print(file_name, type(file_name))
 
@@ -154,9 +153,9 @@ if __name__ == '__main__':
     plt.plot(range(len(train_loss)), train_loss, color='r')
     plt.ylabel('Training loss')
     plt.xlabel('Communication Rounds')
-    sub_fig_name = "save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_loss.png". \
+    sub_fig_name = "save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}]_loss.png". \
         format(args.dataset, args.model, args.epochs, args.frac,
-               args.iid, args.local_ep, args.local_bs)
+               args.iid, args.local_ep, args.local_bs, args.snr)
     fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
@@ -166,10 +165,10 @@ if __name__ == '__main__':
     plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
     plt.ylabel('Average Accuracy')
     plt.xlabel('Communication Rounds')
-    sub_fig_name = 'save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_acc.png'. \
+    sub_fig_name = 'save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}]_acc.png'. \
         format(args.dataset, args.model, args.epochs, args.frac,
-               args.iid, args.local_ep, args.local_bs)
-    fig_name = (fig_name)
+               args.iid, args.local_ep, args.local_bs, args.snr)
+    plt.savefig(fig_name)
 
     save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy})
-    save.to_csv('save/nn_{}_{}_{}.csv'.format(args.dataset, args.model, args.epochs))
+    save.to_csv('save/nn_{}_{}_{}_{}.csv'.format(args.dataset, args.model, args.epochs, args.snr))

@@ -60,5 +60,9 @@ def args_parser():
                         help='rounds of early stopping')
     parser.add_argument('--verbose', type=int, default=1, help='verbose')
     parser.add_argument('--seed', type=int, default=1, help='random seed')
+
+    # wireless parameter
+    parser.add_argument('--snr', type=float, default=3.0, help='SNR of WGN')
+
     args = parser.parse_args()
     return args
