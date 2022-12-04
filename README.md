@@ -11,3 +11,9 @@ Add 'snr' in Options
 !python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --iid=1 --epochs=20 --local_bs=64 --num_users=10 --local_ep=5 --snr_dB=3.0
 
 Wireless simulation completed
+
+Updated 04/12/2022
+
+Use 'snr_dB' instead of 'snr'
+
+Use learning rate decay. LR times 0.8 every 5 global rounds.
