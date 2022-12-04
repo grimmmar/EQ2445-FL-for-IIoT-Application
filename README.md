@@ -8,6 +8,6 @@ Updated 03/12/2022
 
 Add 'snr' in Options
 
-!python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --iid=1 --epochs=20 --local_bs=64 --num_users=10 --local_ep=5 --snr=3.0
+!python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --iid=1 --epochs=20 --local_bs=64 --num_users=10 --local_ep=5 --snr_dB=3.0
 
 Wireless simulation completed
