@@ -132,7 +132,7 @@ def average_weights(w, hk, args, device):
             m = calculate_m(newW, hk[i])
             wgn = torch.normal(0, 1 / args.snr, newW.shape)
             wgn = wgn.to(device)
-            w_avg[key] += newW + m * wgn / args.num_users
+            w_avg[key] += newW + m * wgn
         w_avg[key] = torch.div(w_avg[key], len(w))
 
     w_avg_de = denormalization(w_avg, stds, means)
