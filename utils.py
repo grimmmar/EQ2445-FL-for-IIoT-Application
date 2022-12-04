@@ -130,7 +130,8 @@ def average_weights(w, hk, args, device):
             stdValue = torch.std(w[i][key], unbiased=False)
             newW = (w[i][key] - meanValue) / stdValue
             m = calculate_m(newW, hk[i])
-            wgn = torch.normal(0, 1 / args.snr, newW.shape)
+            snr = get_snr(args.snr_dB)
+            wgn = torch.normal(0, 1 / snr, newW.shape)
             wgn = wgn.to(device)
             w_avg[key] += newW + m * wgn
         w_avg[key] = torch.div(w_avg[key], len(w))
@@ -152,6 +153,10 @@ def get_hk(args, alpha):
     hk = np.sqrt(alpha/(alpha+1)) + np.sqrt(1/(alpha+1)) * cn
     amplitude = [np.sum(hk[i]**2) for i in range(args.num_users)]
     return amplitude
+
+
+def get_snr(snr_dB):
+    return np.power(10, snr_dB/10)
 
 
 def exp_details(args):
