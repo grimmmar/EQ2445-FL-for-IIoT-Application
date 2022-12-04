@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # Saving the objects train_loss and train_accuracy:
     sub_file_name = './save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}].pkl'. \
         format(args.dataset, args.model, args.epochs, args.frac, args.iid,
-               args.local_ep, args.local_bs, args.snr)
+               args.local_ep, args.local_bs, args.snr_dB)
     file_name = os.path.join(os.getcwd(), sub_file_name)
     # print(file_name, type(file_name))
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     plt.xlabel('Communication Rounds')
     sub_fig_name = "./save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}]_loss.png". \
         format(args.dataset, args.model, args.epochs, args.frac,
-               args.iid, args.local_ep, args.local_bs, args.snr)
+               args.iid, args.local_ep, args.local_bs, args.snr_dB)
     fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
@@ -167,8 +167,8 @@ if __name__ == '__main__':
     plt.xlabel('Communication Rounds')
     sub_fig_name = './save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}]_acc.png'. \
         format(args.dataset, args.model, args.epochs, args.frac,
-               args.iid, args.local_ep, args.local_bs, args.snr)
+               args.iid, args.local_ep, args.local_bs, args.snr_dB)
     plt.savefig(fig_name)
 
     save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy})
-    save.to_csv('./save/nn_{}_{}_{}_{}.csv'.format(args.dataset, args.model, args.epochs, args.snr))
+    save.to_csv('./save/nn_{}_{}_{}_{}.csv'.format(args.dataset, args.model, args.epochs, args.snr_dB))

@@ -3,6 +3,7 @@
 # Python version: 3.6
 
 import torch
+import numpy as np
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
@@ -56,13 +57,14 @@ class LocalUpdate(object):
         # Set mode to train model
         model.train()
         epoch_loss = []
+        learning_rate = self.args.lr * np.power(0.8, int(global_round/5))
 
         # Set optimizer for the local updates
         if self.args.optimizer == 'sgd':
-            optimizer = torch.optim.SGD(model.parameters(), lr=self.args.lr,
+            optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
                                         momentum=0.5)
         elif self.args.optimizer == 'adam':
-            optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr,
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
                                          weight_decay=1e-4)
 
         for iter in range(self.args.local_ep):
@@ -77,10 +79,10 @@ class LocalUpdate(object):
                 optimizer.step()
 
                 if self.args.verbose and (batch_idx % 10 == 0):
-                    print('| Global Round : {} | Local Epoch : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    print('| Global Round : {} | Local Epoch : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tLr: {:.6f}'.format(
                         global_round, iter, batch_idx * len(images),
                         len(self.trainloader.dataset),
-                        100. * batch_idx / len(self.trainloader), loss.item()))
+                        100. * batch_idx / len(self.trainloader), loss.item(), learning_rate))
                 self.logger.add_scalar('loss', loss.item())
                 batch_loss.append(loss.item())
             epoch_loss.append(sum(batch_loss)/len(batch_loss))
