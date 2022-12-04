@@ -16,4 +16,4 @@ Updated 04/12/2022
 
 Use 'snr_dB' instead of 'snr'
 
-Use learning rate decay. LR times 0.8 every 5 global rounds.
+Use step decay lr
