@@ -17,3 +17,6 @@ Updated 04/12/2022
 Use 'snr_dB' instead of 'snr'
 
 Use step decay lr
+
+Updated 07/12/2022
+Modify the incorrect implementation of wireless part
