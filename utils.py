@@ -107,56 +107,78 @@ def get_dataset(args):
     return train_dataset, test_dataset, user_groups
 
 
-def denormalization(w_avg, stds, means):
-    for idx, key in enumerate(w_avg.keys()):
-        w_avg[key] = w_avg[key] * stds[idx] + means[idx]
-    return w_avg
-
-
 def average_weights(w, hk, args, device):
     w_avg = copy.deepcopy(w[0])
-    stds = []
-    means = []
+    stds = torch.empty(0).to(device)
+    means = torch.empty(0).to(device)
+    for i in range(0, len(w)):
+        cur = torch.empty(0).to(device)
+        for key in w[i].keys():
+            cur = torch.cat((cur, w[i][key].view(-1)))
+        meanValue = torch.mean(cur)
+        stdValue = torch.std(cur, unbiased=False)
+        means = torch.cat((means, meanValue.unsqueeze(0)))
+        stds = torch.cat((stds, stdValue.unsqueeze(0)))
+
+    w_squaresum = torch.empty(args.num_users).to(device)
+    d = torch.empty(args.num_users).to(device)
     for key in w_avg.keys():
-        meanValue = torch.mean(w_avg[key])
-        stdValue = torch.std(w_avg[key], unbiased=False)
+        meanValue = means[0]
+        stdValue = stds[0]
+        newW = (w_avg[key] - meanValue) / stdValue
+        w_s, d_s = get_beta(newW)
+        w_squaresum[0] = torch.add(w_squaresum[0], w_s)
+        d[0] = torch.add(d[0], d_s)
+        for i in range(1, len(w)):
+            meanValue = means[i]
+            stdValue = stds[i]
+            newW = (w[i][key] - meanValue) / stdValue
+            w_s, d_s = get_beta(newW)
+            w_squaresum[i] = torch.add(w_squaresum[i], w_s)
+            d[i] = torch.add(d[i], d_s)
+    beta = [w_squaresum[i] / d[i] for i in range(len(w))]
+    tmp = [beta[i] / hk[i] for i in range(len(w))]
+    tmp_tensor = torch.Tensor(tmp).to(device)
+    m = torch.max(tmp_tensor)
+
+    for key in w_avg.keys():
+        meanValue = means[0]
+        stdValue = stds[0]
         newW = (w_avg[key] - meanValue) / stdValue
         w_avg[key] = newW
-        stds.append(stdValue)
-        means.append(meanValue)
-
         for i in range(1, len(w)):
-            meanValue = torch.mean(w[i][key])
-            stdValue = torch.std(w[i][key], unbiased=False)
+            meanValue = means[i]
+            stdValue = stds[i]
             newW = (w[i][key] - meanValue) / stdValue
-            m = calculate_m(newW, hk[i])
             snr = get_snr(args.snr_dB)
-            wgn = torch.normal(0, 1 / snr, newW.shape)
-            wgn = wgn.to(device)
+            wgn = torch.normal(0, 1 / snr, newW.shape).to(device)
             w_avg[key] += newW + m * wgn
         w_avg[key] = torch.div(w_avg[key], len(w))
-
-    w_avg_de = denormalization(w_avg, stds, means)
-    return w_avg_de
+    return w_avg, means, stds
 
 
-def calculate_m(w, hk):
+def get_beta(w):
     w_squaresum = torch.sum(torch.pow(w, 2))
     d = torch.numel(w)
-    beta = 2 * w_squaresum / d
-    m = beta / hk
-    return m
+    return w_squaresum, d
 
 
 def get_hk(args, alpha):
-    cn = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], args.num_users)
-    hk = np.sqrt(alpha/(alpha+1)) + np.sqrt(1/(alpha+1)) * cn
-    amplitude = [np.sum(hk[i]**2) for i in range(args.num_users)]
+    cn = np.random.multivariate_normal([0, 0], [[0.5, 0], [0, 0.5]], args.num_users)
+    hk = np.sqrt(alpha / (alpha + 1)) + np.sqrt(1 / (alpha + 1)) * cn
+    amplitude = [np.sum(hk[i] ** 2) for i in range(args.num_users)]
     return amplitude
 
 
 def get_snr(snr_dB):
-    return np.power(10, snr_dB/10)
+    return np.power(10, snr_dB / 10)
+
+
+def denormalization(w, mean, std):
+    w_avg = copy.deepcopy(w)
+    for idx, key in enumerate(w_avg.keys()):
+        w_avg[key] = w_avg[key] * std + mean
+    return w_avg
 
 
 def exp_details(args):

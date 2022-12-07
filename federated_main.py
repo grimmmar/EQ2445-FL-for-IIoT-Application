@@ -70,6 +70,9 @@ if __name__ == '__main__':
 
     # copy weights
     global_weights = global_model.state_dict()
+    global_model_user = []
+    for idx in range(args.num_users):
+        global_model_user.append(global_model)
 
     # Training
     train_loss, train_accuracy = [], []
@@ -77,7 +80,7 @@ if __name__ == '__main__':
     cv_loss, cv_acc = [], []
     print_every = 2
     val_loss_pre, counter = 0, 0
-    amplitude_hk = get_hk(args, 10)
+    amplitude_hk = get_hk(args, 1)
 
     for epoch in tqdm(range(args.epochs)):
         local_weights, local_losses = [], []
@@ -91,15 +94,19 @@ if __name__ == '__main__':
             local_model = LocalUpdate(args=args, dataset=train_dataset,
                                       idxs=user_groups[idx], logger=logger)
             w, loss = local_model.update_weights(
-                model=copy.deepcopy(global_model), global_round=epoch)
+                model=copy.deepcopy(global_model_user[idx]), global_round=epoch)
             local_weights.append(copy.deepcopy(w))
             local_losses.append(copy.deepcopy(loss))
 
         # update global weights
-        global_weights = average_weights(local_weights, amplitude_hk, args, device)
+        global_weights, means, stds = average_weights(local_weights, amplitude_hk, args, device)
+        de_gw = []
+        for idx in idxs_users:
+            de_gw.append(denormalization(global_weights, means[idx], stds[idx]))
 
-        # update global weights
-        global_model.load_state_dict(global_weights)
+        for idx in idxs_users:
+            global_model.load_state_dict(de_gw[idx])
+            global_model_user[idx] = global_model
 
         loss_avg = sum(local_losses) / len(local_losses)
         train_loss.append(loss_avg)
@@ -110,7 +117,7 @@ if __name__ == '__main__':
         for c in range(args.num_users):
             local_model = LocalUpdate(args=args, dataset=train_dataset,
                                       idxs=user_groups[idx], logger=logger)
-            acc, loss = local_model.inference(model=global_model)
+            acc, loss = local_model.inference(model=global_model_user[c])
             list_acc.append(acc)
             list_loss.append(loss)
         train_accuracy.append(sum(list_acc) / len(list_acc))
@@ -122,11 +129,15 @@ if __name__ == '__main__':
             print('Train Accuracy: {:.2f}% \n'.format(100 * train_accuracy[-1]))
 
     # Test inference after completion of training
-    test_acc, test_loss = test_inference(args, global_model, test_dataset)
+    test_acc = []
+    for idx in range(args.num_users):
+        acc, loss = test_inference(args, global_model_user[idx], test_dataset)
+        test_acc.append(acc)
+    test_acc_av = np.mean(test_acc)
 
     print(f' \n Results after {args.epochs} global rounds of training:')
     print("|---- Avg Train Accuracy: {:.2f}%".format(100 * train_accuracy[-1]))
-    print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
+    print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc_av))
 
     # Saving the objects train_loss and train_accuracy:
     sub_file_name = './save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}].pkl'. \
@@ -148,7 +159,7 @@ if __name__ == '__main__':
     matplotlib.use('Agg')
 
     # Plot Loss curve
-    plt.figure()
+    plt.figure(1)
     plt.title('Training Loss vs Communication rounds')
     plt.plot(range(len(train_loss)), train_loss, color='r')
     plt.ylabel('Training loss')
@@ -160,7 +171,7 @@ if __name__ == '__main__':
     plt.savefig(fig_name)
 
     # Plot Average Accuracy vs Communication rounds
-    plt.figure()
+    plt.figure(2)
     plt.title('Average Accuracy vs Communication rounds')
     plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
     plt.ylabel('Average Accuracy')
@@ -168,6 +179,7 @@ if __name__ == '__main__':
     sub_fig_name = './save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}]_acc.png'. \
         format(args.dataset, args.model, args.epochs, args.frac,
                args.iid, args.local_ep, args.local_bs, args.snr_dB)
+    fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
     save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy})
