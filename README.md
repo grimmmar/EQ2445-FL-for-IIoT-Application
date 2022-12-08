@@ -21,3 +21,9 @@ Use step decay lr
 Updated 07/12/2022
 
 Modify the incorrect implementation of wireless part
+
+Updated 08/12/2022
+
+Modify the incorrect implementation of wireless part
+
+Add the hard node selection part
