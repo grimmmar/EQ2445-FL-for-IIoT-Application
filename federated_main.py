@@ -70,9 +70,6 @@ if __name__ == '__main__':
 
     # copy weights
     global_weights = global_model.state_dict()
-    global_model_user = []
-    for idx in range(args.num_users):
-        global_model_user.append(global_model)
 
     # Training
     train_loss, train_accuracy = [], []
@@ -94,19 +91,14 @@ if __name__ == '__main__':
             local_model = LocalUpdate(args=args, dataset=train_dataset,
                                       idxs=user_groups[idx], logger=logger)
             w, loss = local_model.update_weights(
-                model=copy.deepcopy(global_model_user[idx]), global_round=epoch)
+                model=copy.deepcopy(global_model), global_round=epoch)
             local_weights.append(copy.deepcopy(w))
             local_losses.append(copy.deepcopy(loss))
 
         # update global weights
-        global_weights, means, stds = average_weights(local_weights, amplitude_hk, args, device)
-        de_gw = []
-        for idx in idxs_users:
-            de_gw.append(denormalization(global_weights, means[idx], stds[idx]))
+        global_weights = average_weights(local_weights, amplitude_hk, args, device)
 
-        for idx in idxs_users:
-            global_model.load_state_dict(de_gw[idx])
-            global_model_user[idx] = global_model
+        global_model.load_state_dict(global_weights)
 
         loss_avg = sum(local_losses) / len(local_losses)
         train_loss.append(loss_avg)
@@ -117,7 +109,7 @@ if __name__ == '__main__':
         for c in range(args.num_users):
             local_model = LocalUpdate(args=args, dataset=train_dataset,
                                       idxs=user_groups[idx], logger=logger)
-            acc, loss = local_model.inference(model=global_model_user[c])
+            acc, loss = local_model.inference(model=global_model)
             list_acc.append(acc)
             list_loss.append(loss)
         train_accuracy.append(sum(list_acc) / len(list_acc))
@@ -129,15 +121,12 @@ if __name__ == '__main__':
             print('Train Accuracy: {:.2f}% \n'.format(100 * train_accuracy[-1]))
 
     # Test inference after completion of training
-    test_acc = []
-    for idx in range(args.num_users):
-        acc, loss = test_inference(args, global_model_user[idx], test_dataset)
-        test_acc.append(acc)
-    test_acc_av = np.mean(test_acc)
+    test_acc, test_loss = test_inference(args, global_model, test_dataset)
+
 
     print(f' \n Results after {args.epochs} global rounds of training:')
     print("|---- Avg Train Accuracy: {:.2f}%".format(100 * train_accuracy[-1]))
-    print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc_av))
+    print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
 
     # Saving the objects train_loss and train_accuracy:
     sub_file_name = './save/objects/{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}].pkl'. \

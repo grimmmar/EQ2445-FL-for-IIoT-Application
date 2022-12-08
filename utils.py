@@ -52,7 +52,7 @@ def get_dataset(args):
         """
 
     elif args.dataset == 'LEGO':
-        data_dir = './data/LEGO brick images v1/'
+        data_dir = '../data/LEGO brick images v1/'
         classes = os.listdir(data_dir)
         print('The number of classes in the dataset is: ' + str(len(classes)))
 
@@ -109,52 +109,46 @@ def get_dataset(args):
 
 def average_weights(w, hk, args, device):
     w_avg = copy.deepcopy(w[0])
+    # calculate standard deviation
     stds = torch.empty(0).to(device)
-    means = torch.empty(0).to(device)
     for i in range(0, len(w)):
         cur = torch.empty(0).to(device)
         for key in w[i].keys():
             cur = torch.cat((cur, w[i][key].view(-1)))
-        meanValue = torch.mean(cur)
         stdValue = torch.std(cur, unbiased=False)
-        means = torch.cat((means, meanValue.unsqueeze(0)))
         stds = torch.cat((stds, stdValue.unsqueeze(0)))
 
+    # calculate m
     w_squaresum = torch.empty(args.num_users).to(device)
     d = torch.empty(args.num_users).to(device)
     for key in w_avg.keys():
-        meanValue = means[0]
-        stdValue = stds[0]
-        newW = (w_avg[key] - meanValue) / stdValue
-        w_s, d_s = get_beta(newW)
+        w_s, d_s = get_beta(w_avg[key])
         w_squaresum[0] = torch.add(w_squaresum[0], w_s)
         d[0] = torch.add(d[0], d_s)
         for i in range(1, len(w)):
-            meanValue = means[i]
-            stdValue = stds[i]
-            newW = (w[i][key] - meanValue) / stdValue
-            w_s, d_s = get_beta(newW)
+            w_s, d_s = get_beta(w[i][key])
             w_squaresum[i] = torch.add(w_squaresum[i], w_s)
             d[i] = torch.add(d[i], d_s)
     beta = [w_squaresum[i] / d[i] for i in range(len(w))]
-    tmp = [beta[i] / hk[i] for i in range(len(w))]
+    tmp = [beta[i] * (stds[i] ** 2) / hk[i] for i in range(len(w))]
     tmp_tensor = torch.Tensor(tmp).to(device)
-    m = torch.max(tmp_tensor)
+    tmp_sorted, indices = torch.sort(tmp_tensor, descending=True)
+    tmp_selected = tmp_sorted[-args.selected_users:]
+    m = torch.max(tmp_selected)
+    max_idx = indices[:(args.num_users - args.selected_users)]
 
+    # add noise & average
     for key in w_avg.keys():
-        meanValue = means[0]
-        stdValue = stds[0]
-        newW = (w_avg[key] - meanValue) / stdValue
-        w_avg[key] = newW
-        for i in range(1, len(w)):
-            meanValue = means[i]
-            stdValue = stds[i]
-            newW = (w[i][key] - meanValue) / stdValue
+        for i in range(0, len(w)):
+            if i in max_idx:
+                if i == 0:
+                    w_avg[key] -= w_avg[key]
+                continue
             snr = get_snr(args.snr_dB)
-            wgn = torch.normal(0, 1 / snr, newW.shape).to(device)
-            w_avg[key] += newW + m * wgn
-        w_avg[key] = torch.div(w_avg[key], len(w))
-    return w_avg, means, stds
+            wgn = torch.normal(0, 1 / snr, w[i][key].shape).to(device)
+            w_avg[key] += w[i][key] + m * wgn
+        w_avg[key] = torch.div(w_avg[key], args.selected_users)
+    return w_avg
 
 
 def get_beta(w):

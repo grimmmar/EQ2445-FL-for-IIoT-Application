@@ -56,7 +56,7 @@ class LocalUpdate(object):
         # Set mode to train model
         model.train()
         epoch_loss = []
-        learning_rate = self.args.lr * np.power(0.8, int(global_round / 2))
+        learning_rate = self.args.lr * np.power(0.8, int(global_round / 5))
 
         # Set optimizer for the local updates
         if self.args.optimizer == 'sgd':
