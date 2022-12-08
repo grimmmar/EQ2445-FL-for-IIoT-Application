@@ -64,6 +64,8 @@ def args_parser():
     # wireless parameter
     parser.add_argument('--snr_dB', type=float, default=3.0, help='SNR(dB) of WGN')
     parser.add_argument('--selected_users', type=int, default=8, help='number of users for aggregation')
+    parser.add_argument('--lr_decay_rate', type=float, default=0.8, help='the decay rate of learning rate')
+    parser.add_argument('--lr_decay_step', type=int, default=5, help='the decay step of learning rate')
 
     args = parser.parse_args()
     return args

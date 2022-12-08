@@ -52,7 +52,7 @@ def get_dataset(args):
         """
 
     elif args.dataset == 'LEGO':
-        data_dir = '../data/LEGO brick images v1/'
+        data_dir = './data/LEGO brick images v1/'
         classes = os.listdir(data_dir)
         print('The number of classes in the dataset is: ' + str(len(classes)))
 

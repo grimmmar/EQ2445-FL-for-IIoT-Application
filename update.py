@@ -52,11 +52,11 @@ class LocalUpdate(object):
                                 batch_size=int(len(idxs_test) / 10), shuffle=False)
         return trainloader, validloader, testloader
 
-    def update_weights(self, model, global_round):
+    def update_weights(self, model, global_round, args):
         # Set mode to train model
         model.train()
         epoch_loss = []
-        learning_rate = self.args.lr * np.power(0.8, int(global_round / 5))
+        learning_rate = self.args.lr * np.power(args.lr_decay_rate, int(global_round / args.lr_decay_step))
 
         # Set optimizer for the local updates
         if self.args.optimizer == 'sgd':
