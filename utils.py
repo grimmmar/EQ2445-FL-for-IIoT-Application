@@ -119,11 +119,10 @@ def average_weights(w, hk, args, device):
         stds = torch.cat((stds, stdValue.unsqueeze(0)))
 
     # calculate m
-    tmp = [1 * (stds[i] ** 2) / hk[i] for i in range(len(w))]
+    tmp = [stds[i] ** 2 / hk[i] for i in range(len(w))]
     tmp_tensor = torch.Tensor(tmp).to(device)
     tmp_sorted, indices = torch.sort(tmp_tensor, descending=True)
-    tmp_selected = tmp_sorted[-args.selected_users:]
-    m = torch.sqrt(tmp_selected[0])
+    m = torch.sqrt(tmp_sorted[-args.selected_users])
     max_idx = indices[:(args.num_users - args.selected_users)]
 
     # add noise & average
