@@ -52,7 +52,7 @@ def get_dataset(args):
         """
 
     elif args.dataset == 'LEGO':
-        data_dir = '../data/LEGO brick images v1/'
+        data_dir = './data/LEGO brick images v1/'
         classes = os.listdir(data_dir)
         print('The number of classes in the dataset is: ' + str(len(classes)))
 
@@ -110,36 +110,16 @@ def get_dataset(args):
 def average_weights(w, hk, args, device):
     w_avg = copy.deepcopy(w[0])
     # calculate standard deviation
-    means = torch.empty(0).to(device)
     stds = torch.empty(0).to(device)
     for i in range(0, len(w)):
         cur = torch.empty(0).to(device)
         for key in w[i].keys():
             cur = torch.cat((cur, w[i][key].view(-1)))
-        meanValue = torch.mean(cur)
         stdValue = torch.std(cur, unbiased=False)
-        means = torch.cat((means, meanValue.unsqueeze(0)))
         stds = torch.cat((stds, stdValue.unsqueeze(0)))
 
     # calculate m
-    w_squaresum = torch.zeros(args.num_users).to(device)
-    d = torch.zeros(args.num_users).to(device)
-    for key in w_avg.keys():
-        meanValue = means[0]
-        stdValue = stds[0]
-        newW = (w_avg[key] - meanValue) / stdValue
-        w_s, d_s = get_beta(newW)
-        w_squaresum[0] = torch.add(w_squaresum[0], w_s)
-        d[0] = torch.add(d[0], d_s)
-        for i in range(1, len(w)):
-            meanValue = means[i]
-            stdValue = stds[i]
-            newW = (w[i][key] - meanValue) / stdValue
-            w_s, d_s = get_beta(newW)
-            w_squaresum[i] = torch.add(w_squaresum[i], w_s)
-            d[i] = torch.add(d[i], d_s)
-    beta = [w_squaresum[i] / d[i] for i in range(len(w))]
-    tmp = [beta[i] * (stds[i] ** 2) / hk[i] for i in range(len(w))]
+    tmp = [1 * (stds[i] ** 2) / hk[i] for i in range(len(w))]
     tmp_tensor = torch.Tensor(tmp).to(device)
     tmp_sorted, indices = torch.sort(tmp_tensor, descending=True)
     tmp_selected = tmp_sorted[-args.selected_users:]
