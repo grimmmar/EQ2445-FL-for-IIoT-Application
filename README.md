@@ -33,3 +33,5 @@ Updated 12/11/2022
 Simplify the code
 
 Rewrite the loss function (by Rongfei Pan)
+
+!python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --epochs=30 --num_users=20 --selected_users=18 --snr_dB=10.0
