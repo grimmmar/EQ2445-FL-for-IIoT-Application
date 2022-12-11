@@ -31,3 +31,5 @@ Add the hard node selection part
 Updated 12/11/2022
 
 Simplify the code
+
+Rewrite the loss function (by Rongfei Pan)
