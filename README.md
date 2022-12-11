@@ -27,3 +27,7 @@ Updated 08/12/2022
 Modify the incorrect implementation of wireless part
 
 Add the hard node selection part
+
+Updated 12/11/2022
+
+Simplify the code
