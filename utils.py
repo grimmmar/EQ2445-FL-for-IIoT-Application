@@ -52,7 +52,7 @@ def get_dataset(args):
         """
 
     elif args.dataset == 'LEGO':
-        data_dir = './data/LEGO brick images v1/'
+        data_dir = '../data/LEGO brick images v1/'
         classes = os.listdir(data_dir)
         print('The number of classes in the dataset is: ' + str(len(classes)))
 
@@ -154,7 +154,7 @@ def average_weights(w, hk, args, device):
             if i in max_idx:
                 continue
             snr = get_snr(args.snr_dB)
-            wgn = torch.normal(0, 1 / snr, w[i][key].shape).to(device)
+            wgn = torch.normal(0, 0.5 / snr, w[i][key].shape).to(device)
             w_avg[key] += w[i][key] + m * wgn
         w_avg[key] = torch.div(w_avg[key], args.selected_users)
     return w_avg
