@@ -23,7 +23,7 @@ def get_dataset(args):
     """
 
     if args.dataset == 'cifar':
-        data_dir = './data/cifar/'
+        data_dir = '../data/cifar/'
         apply_transform = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -110,23 +110,32 @@ def get_dataset(args):
 def average_weights(w, hk, args, device):
     w_avg = copy.deepcopy(w[0])
     # calculate standard deviation
+    means = torch.empty(0).to(device)
     stds = torch.empty(0).to(device)
     for i in range(0, len(w)):
         cur = torch.empty(0).to(device)
         for key in w[i].keys():
             cur = torch.cat((cur, w[i][key].view(-1)))
+        meanValue = torch.mean(cur)
         stdValue = torch.std(cur, unbiased=False)
+        means = torch.cat((means, meanValue.unsqueeze(0)))
         stds = torch.cat((stds, stdValue.unsqueeze(0)))
 
     # calculate m
-    w_squaresum = torch.empty(args.num_users).to(device)
-    d = torch.empty(args.num_users).to(device)
+    w_squaresum = torch.zeros(args.num_users).to(device)
+    d = torch.zeros(args.num_users).to(device)
     for key in w_avg.keys():
-        w_s, d_s = get_beta(w_avg[key])
+        meanValue = means[0]
+        stdValue = stds[0]
+        newW = (w_avg[key] - meanValue) / stdValue
+        w_s, d_s = get_beta(newW)
         w_squaresum[0] = torch.add(w_squaresum[0], w_s)
         d[0] = torch.add(d[0], d_s)
         for i in range(1, len(w)):
-            w_s, d_s = get_beta(w[i][key])
+            meanValue = means[i]
+            stdValue = stds[i]
+            newW = (w[i][key] - meanValue) / stdValue
+            w_s, d_s = get_beta(newW)
             w_squaresum[i] = torch.add(w_squaresum[i], w_s)
             d[i] = torch.add(d[i], d_s)
     beta = [w_squaresum[i] / d[i] for i in range(len(w))]
@@ -134,15 +143,15 @@ def average_weights(w, hk, args, device):
     tmp_tensor = torch.Tensor(tmp).to(device)
     tmp_sorted, indices = torch.sort(tmp_tensor, descending=True)
     tmp_selected = tmp_sorted[-args.selected_users:]
-    m = torch.max(tmp_selected)
+    m = torch.sqrt(tmp_selected[0])
     max_idx = indices[:(args.num_users - args.selected_users)]
 
     # add noise & average
     for key in w_avg.keys():
         for i in range(0, len(w)):
+            if i == 0:
+                w_avg[key] -= w_avg[key]
             if i in max_idx:
-                if i == 0:
-                    w_avg[key] -= w_avg[key]
                 continue
             snr = get_snr(args.snr_dB)
             wgn = torch.normal(0, 1 / snr, w[i][key].shape).to(device)
@@ -166,13 +175,6 @@ def get_hk(args, alpha):
 
 def get_snr(snr_dB):
     return np.power(10, snr_dB / 10)
-
-
-def denormalization(w, mean, std):
-    w_avg = copy.deepcopy(w)
-    for idx, key in enumerate(w_avg.keys()):
-        w_avg[key] = w_avg[key] * std + mean
-    return w_avg
 
 
 def exp_details(args):

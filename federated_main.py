@@ -77,7 +77,6 @@ if __name__ == '__main__':
     cv_loss, cv_acc = [], []
     print_every = 2
     val_loss_pre, counter = 0, 0
-    amplitude_hk = get_hk(args, 1)
 
     for epoch in tqdm(range(args.epochs)):
         local_weights, local_losses = [], []
@@ -96,6 +95,7 @@ if __name__ == '__main__':
             local_losses.append(copy.deepcopy(loss))
 
         # update global weights
+        amplitude_hk = get_hk(args, 1)
         global_weights = average_weights(local_weights, amplitude_hk, args, device)
 
         global_model.load_state_dict(global_weights)
@@ -152,9 +152,9 @@ if __name__ == '__main__':
     plt.plot(range(len(train_loss)), train_loss, color='r')
     plt.ylabel('Training loss')
     plt.xlabel('Communication Rounds')
-    sub_fig_name = "./save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}]_loss.png". \
-        format(args.dataset, args.model, args.epochs, args.frac,
-               args.iid, args.local_ep, args.local_bs, args.snr_dB)
+    sub_fig_name = "./save/fed_{}_{}_{}_C[{}]_E[{}]_B[{}]_SNR[{}]_USER[{}]_loss.png". \
+        format(args.dataset, args.model, args.epochs, args.frac, args.local_ep, args.local_bs, args.snr_dB,
+               args.selected_users)
     fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
@@ -164,11 +164,12 @@ if __name__ == '__main__':
     plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
     plt.ylabel('Average Accuracy')
     plt.xlabel('Communication Rounds')
-    sub_fig_name = './save/fed_{}_{}_{}_C[{}]_iid[{}]_E[{}]_B[{}]_SNR[{}]_acc.png'. \
-        format(args.dataset, args.model, args.epochs, args.frac,
-               args.iid, args.local_ep, args.local_bs, args.snr_dB)
+    sub_fig_name = './save/fed_{}_{}_{}_C[{}]_E[{}]_B[{}]_SNR[{}]_USER[{}]_acc.png'. \
+        format(args.dataset, args.model, args.epochs, args.frac, args.local_ep, args.local_bs, args.snr_dB,
+               args.selected_users)
     fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
     save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy})
-    save.to_csv('./save/nn_{}_{}_{}_{}.csv'.format(args.dataset, args.model, args.epochs, args.snr_dB))
+    save.to_csv('./save/fed_{}_{}_{}_SNR[{}]_USER[{}].csv'.format(args.dataset, args.model, args.epochs, args.snr_dB,
+                                                                  args.selected_users))
