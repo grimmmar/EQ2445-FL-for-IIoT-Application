@@ -24,19 +24,6 @@ class DatasetSplit(Dataset):
         return torch.tensor(image), torch.tensor(label)
 
 
-class NewCrossEntropy(torch.nn.Module):
-    def __init__(self, args):
-        super(NewCrossEntropy, self).__init__()
-        self.num_classes = args.num_classes
-
-    def forward(self, x, y):
-        P_i = torch.nn.functional.softmax(x, dim=1)
-        y = torch.nn.functional.one_hot(y, num_classes=self.num_classes)
-        loss = y*torch.log(P_i + 0.000000000001)
-        loss = -torch.mean(torch.sum(loss, dim=1), dim=0)
-        return loss
-
-
 class LocalUpdate(object):
     def __init__(self, args, dataset, idxs, logger):
         self.args = args
@@ -45,8 +32,7 @@ class LocalUpdate(object):
             dataset, list(idxs))
         self.device = 'cuda' if args.gpu else 'cpu'
         # Default criterion set to NLL loss function
-        self.criterion = NewCrossEntropy(args=self.args).to(self.device)
-        # self.criterion = nn.CrossEntropyLoss().to(self.device)
+        self.criterion = nn.CrossEntropyLoss().to(self.device)
 
     def train_val_test(self, dataset, idxs):
         """

@@ -59,8 +59,6 @@ def get_dataset(args):
         train_transform = transforms.Compose([
             transforms.RandomRotation(10),  # rotate +/- 10 degrees
             transforms.RandomHorizontalFlip(),  # reverse 50% of images
-            # transforms.Resize(100),  # resize shortest side to 100 pixels
-            # transforms.CenterCrop(100),  # crop longest side to 100 pixels at center
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406],
                                  [0.229, 0.224, 0.225])
@@ -72,7 +70,6 @@ def get_dataset(args):
         train_size = len(dataset) - test_size
         train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
         if args.iid:
-            # Sample IID user data from Mnist
             user_groups = LEGO_iid(train_dataset, args.num_users)
 
     elif args.dataset == 'mnist' or 'fmnist':
@@ -133,7 +130,7 @@ def average_weights(w, hk, args, device):
             if i in max_idx:
                 continue
             snr = get_snr(args.snr_dB)
-            wgn = torch.normal(0, 0.5 / snr, w[i][key].shape).to(device)
+            wgn = torch.normal(0, 1 / snr, w[i][key].shape).to(device)
             w_avg[key] += w[i][key] + m * wgn
         w_avg[key] = torch.div(w_avg[key], args.selected_users)
     return w_avg

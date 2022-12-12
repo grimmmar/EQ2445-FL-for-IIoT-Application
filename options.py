@@ -17,7 +17,7 @@ def args_parser():
                         help='the fraction of clients: C')
     parser.add_argument('--local_ep', type=int, default=5,
                         help="the number of local epochs: E")
-    parser.add_argument('--local_bs', type=int, default=16,
+    parser.add_argument('--local_bs', type=int, default=64,
                         help="local batch size: B")
     parser.add_argument('--lr', type=float, default=0.01,
                         help='learning rate')
@@ -62,10 +62,10 @@ def args_parser():
     parser.add_argument('--seed', type=int, default=1, help='random seed')
 
     # wireless parameter
-    parser.add_argument('--snr_dB', type=float, default=10.0, help='SNR(dB) of WGN')
-    parser.add_argument('--selected_users', type=int, default=18, help='number of users for aggregation')
+    parser.add_argument('--snr_dB', type=float, default=0.0, help='SNR(dB) of WGN')
+    parser.add_argument('--selected_users', type=int, default=20, help='number of users for aggregation')
     parser.add_argument('--lr_decay_rate', type=float, default=0.8, help='the decay rate of learning rate')
-    parser.add_argument('--lr_decay_step', type=int, default=10, help='the decay step of learning rate')
+    parser.add_argument('--lr_decay_step', type=int, default=5, help='the decay step of learning rate')
 
     args = parser.parse_args()
     return args
