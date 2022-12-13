@@ -69,7 +69,7 @@ def get_dataset(args):
         if args.iid:
             user_groups = LEGO_iid(train_dataset, args.num_users)
         else:
-            user_groups = LEGO_noniid(train_dataset, args)
+            user_groups = LEGO_noniid(train_dataset, args.num_users)
 
     elif args.dataset == 'mnist' or 'fmnist':
         if args.dataset == 'mnist':

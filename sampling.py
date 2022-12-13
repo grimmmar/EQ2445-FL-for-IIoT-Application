@@ -203,14 +203,9 @@ def LEGO_iid(dataset, num_users):
     return dict_users
 
 
-def LEGO_noniid(dataset, args):
-    """
-    Sample non-I.I.D client data from LEGO dataset
-    -> Different clients can hold vastly different amounts of data
-    :param dataset:
-    :param num_users:
-    :return:
-    """
+def LEGO_noniid(dataset, num_users):
+    # Quantity skew (unbalanced)
+    '''
     num_dataset = len(dataset)
     idx = np.arange(num_dataset)
     dict_users = {i: list() for i in range(args.num_users)}
@@ -231,5 +226,26 @@ def LEGO_noniid(dataset, args):
         rand_set = set(np.random.choice(idx, rand_num, replace=False))
         idx = list(set(idx) - rand_set)
         dict_users[i] = rand_set
+    '''
+
+    # Label distribution skew
+    num_shards, num_imgs = int(len(dataset) / num_users), 20
+    idx_shard = [i for i in range(num_shards)]
+    dict_users = {i: np.array([]) for i in range(num_users)}
+    idxs = np.arange(num_shards * num_imgs)
+    labels = np.array(dataset.indices)
+
+    # sort labels
+    idxs_labels = np.vstack((idxs, labels[:len(idxs)]))
+    idxs_labels = idxs_labels[:, idxs_labels[1, :].argsort()]
+    idxs = idxs_labels[0, :]
+
+    # divide and assign
+    for i in range(num_users):
+        rand_set = set(np.random.choice(idx_shard, 12, replace=False))
+        idx_shard = list(set(idx_shard) - rand_set)
+        for rand in rand_set:
+            dict_users[i] = np.concatenate(
+                (dict_users[i], idxs[rand * num_imgs:(rand + 1) * num_imgs]), axis=0)
 
     return dict_users
