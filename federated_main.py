@@ -152,9 +152,9 @@ if __name__ == '__main__':
     plt.plot(range(len(train_loss)), train_loss, color='r')
     plt.ylabel('Training loss')
     plt.xlabel('Communication Rounds')
-    sub_fig_name = "./save/fed_{}_{}_{}_C[{}]_E[{}]_B[{}]_SNR[{}]_USER[{}]_loss.png". \
+    sub_fig_name = "./save/fed_{}_{}_{}_C[{}]_E[{}]_B[{}]_SNR[{}]_USER[{}]_iid[{}]_loss.png". \
         format(args.dataset, args.model, args.epochs, args.frac, args.local_ep, args.local_bs, args.snr_dB,
-               args.selected_users)
+               args.selected_users, args.iid)
     fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
@@ -164,12 +164,12 @@ if __name__ == '__main__':
     plt.plot(range(len(train_accuracy)), train_accuracy, color='k')
     plt.ylabel('Average Accuracy')
     plt.xlabel('Communication Rounds')
-    sub_fig_name = './save/fed_{}_{}_{}_C[{}]_E[{}]_B[{}]_SNR[{}]_USER[{}]_acc.png'. \
+    sub_fig_name = './save/fed_{}_{}_{}_C[{}]_E[{}]_B[{}]_SNR[{}]_USER[{}]_iid[{}]_acc.png'. \
         format(args.dataset, args.model, args.epochs, args.frac, args.local_ep, args.local_bs, args.snr_dB,
-               args.selected_users)
+               args.selected_users, args.iid)
     fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
     save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy})
-    save.to_csv('./save/fed_{}_{}_{}_SNR[{}]_USER[{}].csv'.format(args.dataset, args.model, args.epochs, args.snr_dB,
-                                                                  args.selected_users))
+    save.to_csv('./save/fed_{}_{}_{}_SNR[{}]_USER[{}]_iid[{}].csv'.format(args.dataset, args.model, args.epochs,
+                                                                          args.snr_dB, args.selected_users, args.iid))

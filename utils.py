@@ -11,9 +11,7 @@ from torchvision import datasets, transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data import random_split
-from sampling import mnist_iid, mnist_noniid, mnist_noniid_unequal
-from sampling import cifar_iid, cifar_noniid
-from sampling import LEGO_iid
+from sampling import *
 
 
 def get_dataset(args):
@@ -23,7 +21,7 @@ def get_dataset(args):
     """
 
     if args.dataset == 'cifar':
-        data_dir = '../data/cifar/'
+        data_dir = './data/cifar/'
         apply_transform = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -64,13 +62,14 @@ def get_dataset(args):
                                  [0.229, 0.224, 0.225])
         ])
         dataset = ImageFolder(data_dir, transform=train_transform)
-        img, label = dataset[100]
         torch.manual_seed(20)
         test_size = len(dataset) // 5
         train_size = len(dataset) - test_size
         train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
         if args.iid:
             user_groups = LEGO_iid(train_dataset, args.num_users)
+        else:
+            user_groups = LEGO_noniid(train_dataset, args)
 
     elif args.dataset == 'mnist' or 'fmnist':
         if args.dataset == 'mnist':
