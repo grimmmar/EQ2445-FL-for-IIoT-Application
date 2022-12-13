@@ -35,3 +35,7 @@ Simplify the code
 Rewrite the loss function (by Rongfei Pan)
 
 !python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --epochs=30 --num_users=20 --selected_users=18 --snr_dB=10.0
+
+Updated 13/11/2022
+
+Add non-iid part for LEGO dataset
