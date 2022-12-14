@@ -1,5 +1,12 @@
-#Project Diary
+Title
+============
+Federated Learning for Industrial Internet of Thing Application
+EQ2445 - Project in Multimedia Processing and Analysis - KTH
+Project Owner: Deyou Zhang
+Main contributor: Hanqi Yang, Rongfei Pan
 
+Project Diary
+============
 Updated 03/12/2022
 
 Add 'snr' in Options
@@ -36,8 +43,8 @@ Updated 13/11/2022
 
 Add non-iid part for LEGO dataset
 
-#Notice
-
+Notice
+============
 the LEGO dataset has 16 classes. And since its dataset contains less images than cifar10 or fmnist, the number of users need to be small, or there will be an error.
 
 The dataset can be found in https://www.kaggle.com/datasets/joosthazelzet/lego-brick-images
