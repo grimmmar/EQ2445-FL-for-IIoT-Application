@@ -4,7 +4,7 @@ EQ2445 - Project in Multimedia Processing and Analysis - KTH
 
 Project Owner: Deyou Zhang
 
-Main contributor: Hanqi Yang (wireless simulation), ![Rongfei Pan](https://github.com/Tim-RongfeiPan) (neuron network construction)
+Main contributor: Hanqi Yang (wireless simulation), [Rongfei Pan](https://github.com/Tim-RongfeiPan) (neuron network construction)
 
 # Install
 
@@ -34,7 +34,15 @@ Command Example:
 <python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --epochs=30 --num_users=20 --selected_users=18 --snr_dB=10.0 --iid=0> 
 
 ## Run the code on google-colab
-Create the folders in the same way as in local. Use the colab file ![federated_colab.ipynb](https://github.com/grimmmar/EQ2445-FL-for-IIoT-Application/blob/main/federated_colab.ipynb) directly.
+Create the folders in the same way as in local. Use [federated_colab.ipynb](https://github.com/grimmmar/EQ2445-FL-for-IIoT-Application/blob/main/federated_colab.ipynb) directly.
+
+# Environment
+
+- Python 3.9.6
+
+- Pytorch 1.13.0+cu117
+
+- Cuda 11.7
 
 # Project Diary
 
