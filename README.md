@@ -34,7 +34,7 @@ Command Example:
 <python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --epochs=30 --num_users=20 --selected_users=18 --snr_dB=10.0 --iid=0> 
 
 ## Run the code on google-colab
-Create the folders in the same way as in local. Use the colab file here directly.
+Create the folders in the same way as in local. Use the colab file federated_colab.ipynb here directly.
 
 # Project Diary
 
