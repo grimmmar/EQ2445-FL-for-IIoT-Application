@@ -1,8 +1,11 @@
 Title
 ============
 Federated Learning for Industrial Internet of Thing Application
+
 EQ2445 - Project in Multimedia Processing and Analysis - KTH
+
 Project Owner: Deyou Zhang
+
 Main contributor: Hanqi Yang, Rongfei Pan
 
 Project Diary
