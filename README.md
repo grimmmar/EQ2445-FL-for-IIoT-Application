@@ -26,15 +26,21 @@ Federated-learning/
   
 All the .py file should be put in the folder 'Federated-learning/src'
 
+## Run the code locally
 Run the cmd.exe under path 'Federated-learning/'
+
+Command Example:
+
+<python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --epochs=30 --num_users=20 --selected_users=18 --snr_dB=10.0 --iid=0> 
+
+## Run the code on google-colab
+Create the folders in the same way as in local. Use the colab file here directly.
 
 # Project Diary
 
 Updated 03/12/2022
 
 Add 'snr' in Options
-
-!python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --iid=1 --epochs=20 --local_bs=64 --num_users=10 --local_ep=5 --snr_dB=3.0
 
 Wireless simulation completed
 
@@ -57,10 +63,6 @@ Add the hard node selection part
 Updated 12/11/2022
 
 Simplify the code
-
-Rewrite the loss function (by Rongfei Pan)
-
-!python src/federated_main.py --model=cnn --dataset=LEGO --gpu=0 --epochs=30 --num_users=20 --selected_users=18 --snr_dB=10.0
 
 Updated 13/11/2022
 
