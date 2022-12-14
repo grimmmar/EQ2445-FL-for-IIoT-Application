@@ -26,6 +26,12 @@ Federated-learning/
   
 All the .py file should be put in the folder 'Federated-learning/src'
 
+# Usage
+
+- federated_main.py (Federated Learning)
+
+- baseline_main.py (Centralized neuron network)
+
 ## Run the code locally
 Run the cmd.exe under path 'Federated-learning/'
 
