@@ -77,6 +77,7 @@ if __name__ == '__main__':
     cv_loss, cv_acc = [], []
     print_every = 2
     val_loss_pre, counter = 0, 0
+    mse = []
 
     for epoch in tqdm(range(args.epochs)):
         local_weights, local_losses = [], []
@@ -96,9 +97,11 @@ if __name__ == '__main__':
 
         # update global weights
         amplitude_hk = get_hk(args, 1)
-        global_weights = average_weights(local_weights, amplitude_hk, args, device)
+        global_weights, local_mse = average_weights(local_weights, amplitude_hk, args, device)
 
         global_model.load_state_dict(global_weights)
+        local_mse = local_mse.cpu().numpy()
+        mse.append(local_mse)
 
         loss_avg = sum(local_losses) / len(local_losses)
         train_loss.append(loss_avg)
@@ -170,6 +173,6 @@ if __name__ == '__main__':
     fig_name = os.path.join(os.getcwd(), sub_fig_name)
     plt.savefig(fig_name)
 
-    save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy})
+    save = pd.DataFrame({'loss': train_loss, 'accuracy': train_accuracy, 'mse': mse})
     save.to_csv('./save/fed_{}_{}_{}_SNR[{}]_USER[{}]_iid[{}].csv'.format(args.dataset, args.model, args.epochs,
                                                                           args.snr_dB, args.selected_users, args.iid))
