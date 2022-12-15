@@ -2,10 +2,6 @@
 
 EQ2445 - Project in Multimedia Processing and Analysis - KTH
 
-Project Owner: Deyou Zhang
-
-Main contributor: Hanqi Yang (wireless simulation), [Rongfei Pan](https://github.com/Tim-RongfeiPan) (neuron network construction)
-
 # Install
 
 Folder skeleton:
@@ -81,6 +77,10 @@ Simplify the code
 Updated 13/11/2022
 
 Add non-iid part for LEGO dataset
+
+Updated 15/11/2022
+
+Add MSE calculator
 
 # Notice
 
